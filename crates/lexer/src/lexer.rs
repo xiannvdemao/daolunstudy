@@ -238,6 +238,8 @@ impl<'a> Lexer<'a> {
                     "AVG" => Token::Avg,
                     "MIN" => Token::Min,
                     "MAX" => Token::Max,
+                    "LIMIT" => Token::Limit,
+                    "OFFSET" => Token::Offset,
                     _ => Token::Identifier(ident),
                 }
             }

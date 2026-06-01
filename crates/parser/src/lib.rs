@@ -41,6 +41,8 @@ pub struct SelectStatement {
     pub table: String,
     pub where_clause: Option<Expression>,
     pub aggregates: Vec<AggregateCall>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
 }
 
 /// Column in SELECT
@@ -203,11 +205,36 @@ impl Parser {
             None
         };
 
+        // Parse LIMIT and OFFSET
+        let mut limit = None;
+        let mut offset = None;
+
+        if matches!(self.current(), Some(Token::Limit)) {
+            self.next();
+            if let Some(Token::NumberLiteral(n)) = self.next() {
+                limit = Some(n.parse::<u64>().map_err(|_| "Invalid LIMIT value")?);
+            } else {
+                return Err("Expected number after LIMIT".to_string());
+            }
+
+            // Parse optional OFFSET
+            if matches!(self.current(), Some(Token::Offset)) {
+                self.next();
+                if let Some(Token::NumberLiteral(n)) = self.next() {
+                    offset = Some(n.parse::<u64>().map_err(|_| "Invalid OFFSET value")?);
+                } else {
+                    return Err("Expected number after OFFSET".to_string());
+                }
+            }
+        }
+
         Ok(Statement::Select(SelectStatement {
             columns,
             table,
             where_clause,
             aggregates,
+            limit,
+            offset,
         }))
     }
 
@@ -641,6 +668,34 @@ mod tests {
                 assert_eq!(d.name, "users");
             }
             _ => panic!("Expected DROP TABLE statement"),
+        }
+    }
+
+    #[test]
+    fn test_parse_select_limit() {
+        let result = parse("SELECT * FROM users LIMIT 10");
+        assert!(result.is_ok());
+        match result.unwrap() {
+            Statement::Select(s) => {
+                assert_eq!(s.table, "users");
+                assert_eq!(s.limit, Some(10));
+                assert_eq!(s.offset, None);
+            }
+            _ => panic!("Expected SELECT statement with LIMIT"),
+        }
+    }
+
+    #[test]
+    fn test_parse_select_limit_offset() {
+        let result = parse("SELECT * FROM users LIMIT 10 OFFSET 20");
+        assert!(result.is_ok());
+        match result.unwrap() {
+            Statement::Select(s) => {
+                assert_eq!(s.table, "users");
+                assert_eq!(s.limit, Some(10));
+                assert_eq!(s.offset, Some(20));
+            }
+            _ => panic!("Expected SELECT statement with LIMIT and OFFSET"),
         }
     }
 }

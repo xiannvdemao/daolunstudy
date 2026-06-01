@@ -96,6 +96,10 @@ pub enum Token {
     Min,
     Max,
 
+    // Query modifiers
+    Limit,
+    Offset,
+
     // Syntax
     LParen,
     RParen,
@@ -167,6 +171,8 @@ pub fn is_keyword(s: &str) -> bool {
             | "AND"
             | "OR"
             | "NOT"
+            | "LIMIT"
+            | "OFFSET"
     )
 }
 

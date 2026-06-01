@@ -3,8 +3,8 @@
 //! Converts token stream from Lexer into Abstract Syntax Tree (AST).
 //! Supports SQL-92 subset: SELECT, INSERT, UPDATE, DELETE, CREATE/DROP TABLE.
 
-use sqlrustgo_lexer::{Lexer, Token};
 use serde::{Deserialize, Serialize};
+use sqlrustgo_lexer::{Lexer, Token};
 
 /// SQL Statement types
 #[derive(Debug, Clone, PartialEq)]

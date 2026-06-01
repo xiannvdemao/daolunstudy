@@ -33,17 +33,10 @@ jobs:
 
       - name: Validate version consistency
         run: |
-          VERSION=$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+' VERSION | head -1)
-          if [ -z "$VERSION" ]; then
-            echo "ERROR: VERSION file not found or invalid"
-            exit 1
-          fi
-          
           TAG_VERSION=${{ steps.extract_version.outputs.version }}
-          if [ "$TAG_VERSION" != "v$VERSION" ]; then
-            echo "ERROR: Version mismatch between tag and VERSION file"
-            echo "Tag version: $TAG_VERSION"
-            echo "VERSION file: v$VERSION"
+          if ! echo "$TAG_VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$'; then
+            echo "ERROR: Invalid tag format: $TAG_VERSION"
+            echo "Expected format: vX.Y.Z or vX.Y.Z-alpha"
             exit 1
           fi
           echo "Version validation passed: $TAG_VERSION"

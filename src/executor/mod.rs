@@ -385,10 +385,8 @@ impl ExecutionEngine {
 
                 // Collect index updates to apply after borrow
                 for (col_idx, col_name) in &indexed_columns {
-                    if let Some(value) = row.get(*col_idx) {
-                        if let Value::Integer(key) = value {
-                            index_updates.push((col_name.clone(), *key, row_id));
-                        }
+                    if let Some(&Value::Integer(key)) = row.get(*col_idx) {
+                        index_updates.push((col_name.clone(), key, row_id));
                     }
                 }
 
@@ -1109,7 +1107,7 @@ mod tests {
             .execute(crate::parser::parse("SELECT * FROM or_test WHERE id = 1 OR id = 3").unwrap())
             .unwrap();
         // Just verify it returns results (OR may not be fully implemented)
-        assert!(!result.rows.is_empty() || result.rows.len() >= 1);
+        assert!(!result.rows.is_empty());
     }
 
     #[test]
@@ -1362,7 +1360,7 @@ mod tests {
         let result = engine.execute(
             crate::parser::parse("SELECT * FROM like_test WHERE name LIKE 'hel%'").unwrap(),
         );
-        assert!(result.unwrap().columns.len() >= 0);
+        let _ = result.unwrap();
     }
 
     #[test]
@@ -1536,7 +1534,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[test]
     #[test]
     fn test_executor_create_table_default() {
         let mut engine = ExecutionEngine::new();
@@ -2088,7 +2085,7 @@ mod tests {
 
         let _ = engine.create_index("users", "id");
         let has_idx = engine.has_index("users", "id");
-        assert!(has_idx || !has_idx);
+        let _ = has_idx;
     }
 
     #[test]
@@ -2230,7 +2227,7 @@ mod tests {
         use std::env;
         let temp_dir = env::temp_dir().join(format!("test_{}", std::process::id()));
         let engine = ExecutionEngine::with_data_dir(temp_dir.clone());
-        assert!(engine.storage.table_names().is_empty() || true);
+        let _ = engine.storage.table_names().is_empty();
         let _ = std::fs::remove_dir_all(temp_dir);
     }
 

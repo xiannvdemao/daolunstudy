@@ -95,7 +95,7 @@ pub enum Token {
     Avg,
     Min,
     Max,
-    
+
     // Query modifiers
     Limit,
     Offset,

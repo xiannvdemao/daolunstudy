@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harness 治理闭环图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 40px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            min-width: 500px;
+        }
+        .step-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .step-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .step-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .step-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .step-5 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+        .step-6 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        
+        .arrow {
+            font-size: 3em;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .arrow-down { transform: rotate(90deg); display: inline-block; }
+        .check-fail {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .check-pass {
+            background: linear-gradient(135deg, #2ed573 0%, #1e90ff 100%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .icon { font-size: 1.5em; }
+        .no-gate-warning {
+            margin-top: 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f78ca0 0%, #f9748f 50%, #fd868c 100%);
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+        }
+        .no-gate-warning h3 { margin-bottom: 15px; font-size: 1.5em; }
+        .data-card {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Harness 治理闭环图</h1>
+        
+        <div class="flowchart">
+            <div class="step step-1">
+                <div>
+                    ① 发现问题<br/>
+                    <span class="data-card">DELETE QPS: 86.52 → 目标: ≥10,000</span>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+            
+            <div class="step step-2">
+                <div>
+                    ② 写代码优化<br/>
+                    <span class="data-card">实现 WAL 延迟写入机制</span>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+            
+            <div class="step step-3">
+                ③ Gate 检查
+            </div>
+            <div style="display: flex; gap: 30px;">
+                <div class="check-pass">
+                    <span class="icon">✅</span> BP1: 编译/格式/Clippy 通过
+                </div>
+                <div class="check-fail">
+                    <span class="icon">❌</span> BP2: QPS 仍未达标
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+            
+            <div class="step step-4">
+                <div>
+                    ④ 分析根因并优化<br/>
+                    <span class="data-card">问题: 每次 DELETE 都写整个表</span>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+            
+            <div class="step step-5">
+                <div>
+                    ⑤ 重新提交 & 通过<br/>
+                    <span class="data-card">QPS 从 86.52 → 12,345</span>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+            
+            <div class="step step-6">
+                <div>
+                    ⑥ 知识沉淀<br/>
+                    <span class="data-card">记录到 GBrain, 评估 Gate 阈值</span>
+                </div>
+            </div>
+            <div class="arrow">↻</div>
+            <div style="font-size: 1.2em; color: #666; margin-top: 10px;">回到下一轮优化</div>
+        </div>
+        
+        <div class="no-gate-warning">
+            <h3>⚠️ 如果没有 Gate 会怎样？</h3>
+            <p>低性能代码（DELETE 只有 86 QPS）会直接合并到主分支</p>
+            <p>生产环境用户会感受到极慢的操作</p>
+            <p>性能问题无法自动化拦截，只能事后人工发现！</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop/v3.0.0 ]
+  pull_request:
+    branches: [ develop/v3.0.0 ]
+
+jobs:
+  bp1-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --all-features
+      - run: cargo fmt --check --all
+      - run: cargo clippy --all-features -- -D warnings
+
+  bp2-integration:
+    needs: bp1-static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --all-features
+      - run: cargo test --test qps_benchmark_test -- --ignored --nocapture

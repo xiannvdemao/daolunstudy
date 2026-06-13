@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回归检测流程设计 - Web API 项目</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f0f4f8; padding: 30px; }
+        h1 { text-align: center; color: #1a365d; margin-bottom: 8px; font-size: 24px; }
+        .subtitle { text-align: center; color: #718096; margin-bottom: 30px; font-size: 14px; }
+
+        /* 流程图主体 */
+        .flow {
+            max-width: 800px; margin: 0 auto 40px;
+            background: white; border-radius: 16px;
+            padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .flow h2 { color: #1a365d; margin-bottom: 20px; font-size: 18px; text-align: center; }
+
+        .flow-step {
+            display: flex; align-items: flex-start; gap: 16px;
+            margin-bottom: 8px; position: relative;
+        }
+        .flow-num {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 14px; flex-shrink: 0;
+        }
+        .flow-content {
+            flex: 1; padding: 12px 16px; border-radius: 10px;
+            font-size: 14px; line-height: 1.6;
+        }
+        .flow-content strong { font-size: 15px; }
+
+        .step-trigger .flow-num { background: #3182ce; }
+        .step-trigger .flow-content { background: #ebf8ff; border-left: 3px solid #3182ce; }
+        .step-run .flow-num { background: #38a169; }
+        .step-run .flow-content { background: #f0fff4; border-left: 3px solid #38a169; }
+        .step-compare .flow-num { background: #dd6b20; }
+        .step-compare .flow-content { background: #fffaf0; border-left: 3px solid #dd6b20; }
+        .step-decide .flow-num { background: #805ad5; }
+        .step-decide .flow-content { background: #faf5ff; border-left: 3px solid #805ad5; }
+
+        .flow-arrow {
+            text-align: center; color: #a0aec0; font-size: 18px; margin: 2px 0;
+        }
+
+        /* 判定分支 */
+        .branch-container {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+            margin: 12px 0 8px 52px;
+        }
+        .branch {
+            border-radius: 10px; padding: 14px; text-align: center; font-size: 13px;
+        }
+        .branch-pass { background: #f0fff4; border: 2px solid #38a169; }
+        .branch-warn { background: #fffaf0; border: 2px solid #dd6b20; }
+        .branch-fail { background: #fff5f5; border: 2px solid #e53e3e; }
+        .branch h4 { font-size: 14px; margin-bottom: 6px; }
+        .branch-pass h4 { color: #276749; }
+        .branch-warn h4 { color: #c05621; }
+        .branch-fail h4 { color: #9b2c2c; }
+
+        /* 设计决策表格 */
+        .design-section {
+            max-width: 800px; margin: 0 auto 30px;
+            background: white; border-radius: 16px;
+            padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .design-section h2 { color: #1a365d; margin-bottom: 16px; font-size: 18px; }
+
+        .decision-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .decision-card {
+            border-radius: 10px; padding: 16px;
+        }
+        .dc-blue { background: #ebf8ff; border: 1px solid #bee3f8; }
+        .dc-green { background: #f0fff4; border: 1px solid #c6f6d5; }
+        .dc-orange { background: #fffaf0; border: 1px solid #feebc8; }
+        .dc-purple { background: #faf5ff; border: 1px solid #e9d8fd; }
+        .decision-card h3 { font-size: 14px; margin-bottom: 8px; }
+        .dc-blue h3 { color: #2b6cb0; }
+        .dc-green h3 { color: #276749; }
+        .dc-orange h3 { color: #c05621; }
+        .dc-purple h3 { color: #6b46c1; }
+        .decision-card p { font-size: 13px; color: #4a5568; line-height: 1.6; }
+        .decision-card code {
+            background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px;
+        }
+
+        /* 退化阈值表 */
+        .threshold-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .threshold-table th { background: #2d3748; color: white; padding: 10px 14px; font-size: 13px; text-align: left; }
+        .threshold-table td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .threshold-table tr:nth-child(even) { background: #f7fafc; }
+
+        .tag-pass { background: #c6f6d5; color: #276749; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .tag-warn { background: #feebc8; color: #c05621; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .tag-fail { background: #fed7d7; color: #9b2c2c; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>回归检测流程设计 — Web API 项目</h1>
+<p class="subtitle">关键性能指标：/api/users 接口响应时间 ≤ 200ms</p>
+
+<!-- 设计决策 -->
+<div class="design-section">
+    <h2>4.1 设计决策</h2>
+    <div class="decision-grid">
+        <div class="decision-card dc-blue">
+            <h3>1. 基准数据存哪里？</h3>
+            <p>
+                存储在 <code>baseline.json</code> 文件中，提交到仓库。<br/>
+                内容：<code>{ "api/users": { "p99_ms": 180, "p50_ms": 45, "timestamp": "2026-06-06" } }</code><br/>
+                好处：版本可控，每次变更可追溯。
+            </p>
+        </div>
+        <div class="decision-card dc-green">
+            <h3>2. 什么时候触发检测？</h3>
+            <p>
+                <strong>每次 PR</strong> 都触发回归检测。<br/>
+                PR 创建时自动运行性能测试，对比 baseline.json。<br/>
+                每周额外运行一次完整基准测试，更新 baseline。
+            </p>
+        </div>
+        <div class="decision-card dc-orange">
+            <h3>3. 退化多少算 FAIL？</h3>
+            <p>
+                与 SQLRustGo 保持一致：<br/>
+                ≤ 5% → PASS（噪声范围内）<br/>
+                5% ~ 20% → WARN（PR 需要说明原因）<br/>
+                > 20% → FAIL（PR Blocked）
+            </p>
+        </div>
+        <div class="decision-card dc-purple">
+            <h3>4. 检测到退化后的流程？</h3>
+            <p>
+                1. CI 自动在 PR 评论中标注退化详情<br/>
+                2. 生成性能对比报告（附火焰图）<br/>
+                3. 自动创建 Issue 并分配给 PR 作者<br/>
+                4. PR 标记为 "performance-regression" 标签
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- 回归检测阈值 -->
+<div class="design-section">
+    <h2>回归检测判定标准</h2>
+    <table class="threshold-table">
+        <thead>
+            <tr>
+                <th>退化程度</th>
+                <th>判定</th>
+                <th>动作</th>
+                <th>说明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>≤ 5%</td>
+                <td><span class="tag-pass">PASS</span></td>
+                <td>PR 正常合并</td>
+                <td>响应时间从 180ms 变为 189ms → 噪声范围内</td>
+            </tr>
+            <tr>
+                <td>5% ~ 20%</td>
+                <td><span class="tag-warn">WARN</span></td>
+                <td>PR 需要说明原因</td>
+                <td>响应时间从 180ms 变为 210ms → 需要开发者确认是否可接受</td>
+            </tr>
+            <tr>
+                <td>> 20%</td>
+                <td><span class="tag-fail">FAIL</span></td>
+                <td>PR Blocked</td>
+                <td>响应时间从 180ms 变为 350ms → 必须修复后才能合并</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 流程图 -->
+<div class="flow">
+    <h2>4.2 回归检测流程图</h2>
+
+    <div class="flow-step step-trigger">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+            <strong>触发：PR 创建 / 推送代码</strong><br/>
+            开发者提交 PR → Gitea Actions 自动触发 CI 流水线
+        </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step step-run">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+            <strong>运行性能测试</strong><br/>
+            执行 <code>cargo test --test qps_benchmark_test</code> + HTTP 压测工具（wrk/ab）<br/>
+            测量 /api/users 接口的 P50、P99 响应时间
+        </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step step-compare">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+            <strong>对比基准数据</strong><br/>
+            读取 <code>baseline.json</code>，计算退化率：<code>Δ = (当前P99 - 基准P99) / 基准P99 × 100%</code>
+        </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step step-decide">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+            <strong>判定结果</strong><br/>
+            根据 Δ 值判定 PASS / WARN / FAIL
+        </div>
+    </div>
+
+    <div class="branch-container">
+        <div class="branch branch-pass">
+            <h4>✅ PASS（Δ ≤ 5%）</h4>
+            <p>PR 正常合并</p>
+            <p>CI 标记绿色 ✓</p>
+        </div>
+        <div class="branch branch-warn">
+            <h4>⚠️ WARN（5% < Δ ≤ 20%）</h4>
+            <p>PR 评论标注警告</p>
+            <p>需要开发者说明原因</p>
+            <p>不阻塞合并</p>
+        </div>
+        <div class="branch branch-fail">
+            <h4>❌ FAIL（Δ > 20%）</h4>
+            <p>PR Blocked</p>
+            <p>自动创建 Issue</p>
+            <p>必须修复后重新提交</p>
+        </div>
+    </div>
+
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step step-trigger">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+            <strong>FAIL 后的自动处理</strong><br/>
+            1. CI 在 PR 评论中发布性能对比报告<br/>
+            2. 自动创建 Issue："Performance Regression: /api/users P99 从 180ms 退化到 350ms"<br/>
+            3. Issue 自动分配给 PR 作者<br/>
+            4. PR 打上 <code>performance-regression</code> 标签
+        </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step step-run">
+        <div class="flow-num">6</div>
+        <div class="flow-content">
+            <strong>开发者修复 → 重新提交 PR → 回到步骤 1</strong><br/>
+            PDCA 闭环：Plan → Do → Check → Act
+        </div>
+    </div>
+</div>
+
+<!-- 核心公式 -->
+<div class="design-section">
+    <h2>核心公式</h2>
+    <p style="font-size: 14px; line-height: 2; color: #4a5568;">
+        <strong>退化率计算：</strong><br/>
+        <code style="font-size: 16px; background: #edf2f7; padding: 8px 16px; border-radius: 8px; display: inline-block; margin: 8px 0;">
+            Δ = (current_p99 - baseline_p99) / baseline_p99 × 100%
+        </code><br/><br/>
+        <strong>示例：</strong><br/>
+        基准 P99 = 180ms，当前 P99 = 189ms → Δ = 5% → <span class="tag-pass">PASS</span><br/>
+        基准 P99 = 180ms，当前 P99 = 210ms → Δ = 16.7% → <span class="tag-warn">WARN</span><br/>
+        基准 P99 = 180ms，当前 P99 = 350ms → Δ = 94.4% → <span class="tag-fail">FAIL</span>
+    </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDCA 自优化闭环 - DELETE QPS 优化</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f0f4f8; padding: 30px; }
+
+        h1 { text-align: center; color: #1a365d; margin-bottom: 30px; font-size: 24px; }
+
+        /* PDCA 四象限 */
+        .pdca-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+            max-width: 900px;
+            margin: 0 auto 40px;
+            height: 480px;
+        }
+        .pdca-cell {
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+        }
+        .plan { background: linear-gradient(135deg, #2b6cb0, #3182ce); }
+        .do { background: linear-gradient(135deg, #276749, #38a169); }
+        .check { background: linear-gradient(135deg, #c05621, #dd6b20); }
+        .act { background: linear-gradient(135deg, #9b2c2c, #e53e3e); }
+
+        .pdca-cell h2 { font-size: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .pdca-cell ul { list-style: none; font-size: 14px; line-height: 1.8; }
+        .pdca-cell ul li::before { content: "→ "; opacity: 0.7; }
+
+        .pdca-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px; border: 2px dashed rgba(255,255,255,0.5);
+            z-index: 10;
+        }
+
+        /* 箭头指示 */
+        .arrow-right { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); font-size: 24px; color: white; }
+        .arrow-down { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 24px; color: white; }
+
+        /* 表格 */
+        .table-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .table-container h2 { color: #1a365d; margin-bottom: 16px; font-size: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #2b6cb0; color: white; padding: 12px 16px; text-align: left; font-size: 14px; }
+        td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        tr:nth-child(even) { background: #f7fafc; }
+        .pass { color: #276749; font-weight: bold; }
+        .fail { color: #e53e3e; font-weight: bold; }
+        .highlight { background: #fefcbf; }
+
+        /* 底部说明 */
+        .footer {
+            max-width: 900px; margin: 30px auto 0;
+            background: white; border-radius: 12px; padding: 20px 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .footer h3 { color: #1a365d; margin-bottom: 10px; }
+        .footer p { font-size: 14px; color: #4a5568; line-height: 1.8; }
+        .footer ul { font-size: 14px; color: #4a5568; line-height: 1.8; padding-left: 20px; }
+    </style>
+</head>
+<body>
+
+<h1>PDCA 自优化闭环 — DELETE QPS 优化历程</h1>
+
+<!-- PDCA 四象限 -->
+<div class="pdca-container">
+    <div class="pdca-cell plan">
+        <h2>P — Plan（计划）</h2>
+        <ul>
+            <li>目标：DELETE QPS ≥ 10,000（E-09 Floor）</li>
+            <li>基线：当前 DELETE QPS = 86.52</li>
+            <li>需要提升 115 倍才能达标</li>
+            <li>制定优化路线图：消除磁盘 I/O 瓶颈</li>
+        </ul>
+    </div>
+
+    <div class="pdca-cell do">
+        <h2>D — Do（执行）</h2>
+        <ul>
+            <li>第1轮：引入 WAL 延迟写入</li>
+            <li>第2轮：实现脏表批量提交</li>
+            <li>第3轮：索引加速 DELETE 定位</li>
+            <li>每轮提交 PR → 触发 Gate 检查</li>
+        </ul>
+    </div>
+
+    <div class="pdca-cell check">
+        <h2>C — Check（检查）</h2>
+        <ul>
+            <li>Gate BP2 回归检测自动触发</li>
+            <li>第1轮：QPS = 5,000 → 未达标</li>
+            <li>第2轮：QPS = 35,000 → 未达标</li>
+            <li>第3轮：QPS = 64,896 → 达标！</li>
+        </ul>
+    </div>
+
+    <div class="pdca-cell act">
+        <h2>A — Act（改进）</h2>
+        <ul>
+            <li>分析每轮失败根因</li>
+            <li>沉淀优化 Pattern 到 GBrain</li>
+            <li>更新基准数据（86 → 64,896）</li>
+            <li>回到 Plan → 下一轮优化</li>
+        </ul>
+    </div>
+
+    <div class="pdca-center">PDCA<br/>闭环</div>
+</div>
+
+<!-- PDCA 表格 -->
+<div class="table-container">
+    <h2>DELETE 优化 PDCA 迭代表（206 → 64,896 QPS）</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>迭代轮次</th>
+                <th>Plan（计划）</th>
+                <th>Do（执行）</th>
+                <th>Check（检查）</th>
+                <th>Act（改进）</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>第1轮</strong></td>
+                <td>DELETE ≥ 10,000 QPS</td>
+                <td>实现基本 WAL 延迟写入：每次 DELETE 只标记脏表，定时刷盘</td>
+                <td class="fail">QPS = 5,000 → FAIL ❌</td>
+                <td>分析：定时刷盘间隔太长导致内存占用高；单线程写盘仍有瓶颈</td>
+            </tr>
+            <tr>
+                <td><strong>第2轮</strong></td>
+                <td>继续优化，突破 10,000 QPS</td>
+                <td>引入脏表批量提交 + 多线程异步 WAL：脏表标记 + channel 异步写盘 + 批量合并</td>
+                <td class="fail">QPS = 35,000 → 未达标（但退化率 Δ = +16,600%，大幅改善）</td>
+                <td>分析：WHERE 条件全表扫描是新瓶颈；需要索引加速行定位</td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>第3轮</strong></td>
+                <td>突破瓶颈，达到 E-09 地板</td>
+                <td>索引加速 DELETE 定位：利用已有 B+Tree 索引直接定位要删除的行，避免全表扫描</td>
+                <td class="pass">QPS = 64,896 → 达标！✅</td>
+                <td>更新基准数据 + 沉淀知识到 GBrain</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 说明 -->
+<div class="footer">
+    <h3>关键洞察</h3>
+    <ul>
+        <li><strong>第1轮瓶颈：</strong>即使延迟写盘，单线程 I/O 仍然是瓶颈</li>
+        <li><strong>第2轮瓶颈：</strong>写盘优化后，CPU 计算（全表扫描）成为新瓶颈</li>
+        <li><strong>第3轮突破：</strong>索引消除了 O(n) 全表扫描，变为 O(log n) 索引查找</li>
+        <li><strong>核心思想：</strong>每轮优化解决一个瓶颈，Gate 检查提供客观反馈，PDCA 闭环驱动持续改进</li>
+    </ul>
+</div>
+
+</body>
+</html>

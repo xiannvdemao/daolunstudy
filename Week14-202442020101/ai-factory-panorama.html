@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLRustGo AI-Native 软件工厂全景图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; padding: 40px 20px; }
+        h1 { text-align: center; font-size: 2rem; margin-bottom: 10px; background: linear-gradient(90deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { text-align: center; color: #8892b0; margin-bottom: 50px; font-size: 1rem; }
+        .panorama { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; max-width: 1200px; margin: 0 auto; }
+        .stage { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px 20px; width: 180px; text-align: center; position: relative; backdrop-filter: blur(10px); transition: transform 0.3s, box-shadow 0.3s; }
+        .stage:hover { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(58,123,213,0.3); }
+        .stage-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .stage-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #ccd6f6; }
+        .stage-desc { font-size: 0.75rem; color: #8892b0; line-height: 1.5; }
+        .arrow { font-size: 2rem; color: #3a7bd5; margin: 0 8px; flex-shrink: 0; }
+        .section { max-width: 1200px; margin: 50px auto 0; }
+        .section h2 { font-size: 1.3rem; margin-bottom: 20px; color: #3a7bd5; border-left: 4px solid #3a7bd5; padding-left: 12px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; backdrop-filter: blur(10px); }
+        .card h3 { font-size: 1rem; margin-bottom: 10px; color: #ccd6f6; }
+        .card p { font-size: 0.85rem; color: #8892b0; line-height: 1.6; }
+        .card ul { list-style: none; margin-top: 8px; }
+        .card ul li { font-size: 0.8rem; color: #8892b0; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .card ul li::before { content: "▸ "; color: #3a7bd5; }
+        .flow-line { max-width: 1200px; margin: 40px auto; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+        .flow-line h3 { font-size: 1rem; margin-bottom: 12px; color: #64ffda; }
+        .flow-line pre { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #8892b0; line-height: 1.8; white-space: pre-wrap; }
+        .flow-line pre span { color: #3a7bd5; }
+        .flow-line pre em { color: #64ffda; font-style: normal; }
+        footer { text-align: center; margin-top: 60px; color: #4a5568; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h1>SQLRustGo "AI-Native 软件工厂" 全景图</h1>
+    <p class="subtitle">Agent 编排 → 代码生成 → Harness 验证 → CI/CD 执行 → 知识沉淀</p>
+
+    <div class="panorama">
+        <div class="stage">
+            <div class="stage-icon">🤖</div>
+            <div class="stage-title">Agent 编排</div>
+            <div class="stage-desc">explore / librarian / oracle 三 Agent 并行分析</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stage">
+            <div class="stage-icon">⚙️</div>
+            <div class="stage-title">代码生成</div>
+            <div class="stage-desc">AI 生成代码 + 人工审查 + PR 提交</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stage">
+            <div class="stage-icon">🛡️</div>
+            <div class="stage-title">Harness 验证</div>
+            <div class="stage-desc">BP1 静态 / BP2 集成 / BP3 风险 三层门禁</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stage">
+            <div class="stage-icon">🚀</div>
+            <div class="stage-title">CI/CD 执行</div>
+            <div class="stage-desc">自动构建 → 测试 → 部署 → 监控</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stage">
+            <div class="stage-icon">📚</div>
+            <div class="stage-title">知识沉淀</div>
+            <div class="stage-desc">GBrain 知识库 + 回归基线 + Pattern 更新</div>
+        </div>
+    </div>
+
+    <div class="flow-line">
+        <h3>完整流程</h3>
+        <pre>
+<span>Issue 创建</span> → <span>Agent 并行分析</span> → <span>AI 生成代码</span> → <span>PR 提交</span>
+    │
+    ▼
+<span>Gate 检查</span>
+    ├── <em>BP1 静态</em>: cargo build + fmt + clippy
+    ├── <em>BP2 集成</em>: cargo test + QPS 基准
+    └── <em>BP3 风险</em>: Agent 风险评估
+    │
+    ▼
+<span>CI/CD 执行</span>: 自动构建 → 测试 → 部署
+    │
+    ▼
+<span>知识沉淀</span>: 更新 GBrain + 回归基线 + Pattern
+    │
+    └──→ 回到 Issue（下一轮优化）
+        </pre>
+    </div>
+
+    <div class="section">
+        <h2>各阶段详解</h2>
+        <div class="cards">
+            <div class="card">
+                <h3>🤖 Agent 编排</h3>
+                <p>三 Agent 并行分析，提升代码审查效率</p>
+                <ul>
+                    <li>explore: 代码调用点分析</li>
+                    <li>librarian: 外部文档验证</li>
+                    <li>oracle: 性能风险评估</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>⚙️ 代码生成</h3>
+                <p>AI 辅助生成代码，人工审查后提交 PR</p>
+                <ul>
+                    <li>AI 根据分析结果生成代码</li>
+                    <li>开发者审查并调整</li>
+                    <li>提交 PR 触发 Gate 检查</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🛡️ Harness 验证</h3>
+                <p>三层门禁确保代码质量</p>
+                <ul>
+                    <li>BP1: 编译 + 格式 + Clippy</li>
+                    <li>BP2: 测试 + QPS 基准 (≥10,000)</li>
+                    <li>BP3: 风险评估 + 最佳实践</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🚀 CI/CD 执行</h3>
+                <p>自动化构建、测试、部署流程</p>
+                <ul>
+                    <li>GitHub Actions 自动触发</li>
+                    <li>多平台交叉编译</li>
+                    <li>自动部署 + 监控告警</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>📚 知识沉淀</h3>
+                <p>经验沉淀到 GBrain 知识库</p>
+                <ul>
+                    <li>Episode 记录优化过程</li>
+                    <li>更新回归检测基线</li>
+                    <li>Pattern 库持续积累</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🔄 PDCA 闭环</h3>
+                <p>持续改进的自优化循环</p>
+                <ul>
+                    <li>Plan: 设定优化目标</li>
+                    <li>Do: 实现优化方案</li>
+                    <li>Check: Gate 验证结果</li>
+                    <li>Act: 沉淀知识 + 下一轮</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>SQLRustGo AI-Native 软件工厂 · Week14 实验报告</footer>
+</body>
+</html>
